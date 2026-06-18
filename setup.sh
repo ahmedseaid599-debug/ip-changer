@@ -4,109 +4,58 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
 NC='\033[0m'
 
-# ─────────────────────────────────────────
-#  MATRIX INTRO - Full Screen
-# ─────────────────────────────────────────
-
-matrix_rain() {
-    local COLS=$(tput cols)
-    local ROWS=$(tput lines)
-    local CHARS='アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF'
-    local CHAR_LEN=${#CHARS}
-
-    tput civis          # hide cursor
-    tput clear
-
-    declare -a drops
-    for ((c=0; c<COLS; c++)); do
-        drops[$c]=$((RANDOM % ROWS))
-    done
-
-    local end_time=$((SECONDS + 4))   # run for 4 seconds
-
-    while [ $SECONDS -lt $end_time ]; do
-        for ((c=0; c<COLS; c+=2)); do
-            local row=${drops[$c]}
-            local ch="${CHARS:$((RANDOM % CHAR_LEN)):1}"
-
-            # Bright white head
-            tput cup $row $c
-            printf "\033[1;97m%s\033[0m" "$ch"
-
-            # Green trail (row-1)
-            if [ $row -gt 0 ]; then
-                local trail_ch="${CHARS:$((RANDOM % CHAR_LEN)):1}"
-                tput cup $((row-1)) $c
-                printf "\033[0;32m%s\033[0m" "$trail_ch"
-            fi
-
-            # Dim green fade (row-2)
-            if [ $row -gt 1 ]; then
-                tput cup $((row-2)) $c
-                printf "\033[2;32m%s\033[0m" "${CHARS:$((RANDOM % CHAR_LEN)):1}"
-            fi
-
-            # Erase tail
-            local tail=$((row - 6))
-            if [ $tail -ge 0 ]; then
-                tput cup $tail $c
-                printf " "
-            fi
-
-            drops[$c]=$(( (row + 1) % ROWS ))
-        done
-        sleep 0.04
-    done
-
-    # Fade out - clear screen smoothly
-    for ((i=0; i<3; i++)); do
-        tput clear
-        sleep 0.15
-        for ((c=0; c<COLS; c+=2)); do
-            for ((r=0; r<ROWS; r+=3)); do
-                tput cup $r $c
-                printf "\033[2;32m%s\033[0m" "${CHARS:$((RANDOM % CHAR_LEN)):1}"
+# ─── MATRIX INTRO ───────────────────────────────────────
+matrix_intro() {
+    local duration=${1:-4}
+    local lines=20
+    local cols
+    cols=$(tput cols 2>/dev/null || echo 80)
+    tput civis
+    RANDOM=$$$(date +%s)
+    end=$((SECONDS + duration))
+    while [ $SECONDS -lt $end ]; do
+        for ((i=0; i<lines; i++)); do
+            line=""
+            for ((j=0; j<cols; j++)); do
+                if [ $((RANDOM % 5)) -eq 0 ]; then
+                    char=$((RANDOM % 2))
+                    if [ $char -eq 0 ]; then
+                        line+="$(printf '%s' $((RANDOM % 2)))"
+                    else
+                        code=$((RANDOM % 126 + 33))
+                        line+="$(printf '%b' "$(printf '\\x%x' $code)")"
+                    fi
+                else
+                    line+=" "
+                fi
             done
+            echo -e "${GREEN}${line}${NC}"
         done
-        sleep 0.1
+        sleep 0.05
     done
-
-    tput clear
-    tput cnorm          # restore cursor
+    tput cnorm
+    clear
 }
+# ────────────────────────────────────────────────────────
 
-# ─────────────────────────────────────────
-#  LOGO REVEAL (after matrix)
-# ─────────────────────────────────────────
+# تشغيل الماتريكس انترو
+matrix_intro 4
 
-show_logo() {
-    echo -e "${BLUE}"
-    echo "TOR"
-    echo -e "  _____ _____     _____ _                                   "
-    echo -e " |_   _|  __ \\   / ____| |                                  "
-    echo -e "   | | | |__) | | |    | |__   __ _ _ __   __ _  ___ _ __   "
-    echo -e "   | | |  ___/  | |    |  _ \\ / _\` |  _ \\ / _\` |/ _ \\  __|  "
-    echo -e "  _| |_| |      | |____| | | | (_| | | | | (_| |  __/ |     "
-    echo -e " |_____|_|       \\_____|_| |_|\\__,_|_| |_|\\__, |\\___|_|     "
-    echo -e "                                           __/ |            "
-    echo -e "                                          |___/     V 1.0   "
-    echo -e "${NC}"
-    echo -e "${YELLOW}Author: 𝐌𝐞𝐥𝐢𝐨𝐝𝐚𝐬 𝐕𝐚𝐥𝐥𝐚𝐢𝐧 https://t.me/Heavenvoid ${NC}"
-    echo -e "${YELLOW}=========================================================${NC}\n"
-}
-
-# ─── RUN INTRO ───────────────────────────
-matrix_rain
-show_logo
-sleep 0.5
-
-# ─────────────────────────────────────────
-#  ORIGINAL SCRIPT LOGIC
-# ─────────────────────────────────────────
+echo -e "${BLUE}"
+echo "TOR"
+echo "  _____ _____     _____ _                                   "
+echo " |_   _|  __ \   / ____| |                                  "
+echo "   | | | |__) | | |    | |__   __ _ _ __   __ _  ___ _ __   "
+echo "   | | |  ___/  | |    |  _ \ / _  |  _ \ / _  |/ _ \  __|  "
+echo "  _| |_| |      | |____| | | | (_| | | | | (_| |  __/ |     "
+echo " |_____|_|       \_____|_| |_|\__,_|_| |_|\__, |\___|_|     "
+echo "                                           __/ |            "
+echo "                                          |___/     V 1.0   "
+echo -e "${NC}"
+echo -e "${YELLOW}Author: 𝐌𝐞𝐥𝐢𝐨𝐝𝐚𝐬 𝐕𝐚𝐥𝐥𝐚𝐢𝐧 https://t.me/Heavenvoid ${NC}"
+echo -e "${YELLOW}=========================================================${NC}\n"
 
 set -e
 
@@ -158,26 +107,26 @@ fi
 
 echo -e "${BLUE}[*] Configuring Tor...${NC}"
 TORRC_FILE="/etc/tor/torrc"
-NEEDS_UPDATE=0
+    NEEDS_UPDATE=0
 
-grep -q "^ControlPort 9051" "$TORRC_FILE" || NEEDS_UPDATE=1
-grep -q "^CookieAuthentication 1" "$TORRC_FILE" || NEEDS_UPDATE=1
-grep -q "^CookieAuthFileGroupReadable 1" "$TORRC_FILE" || NEEDS_UPDATE=1
+    grep -q "^ControlPort 9051" "$TORRC_FILE" || NEEDS_UPDATE=1
+    grep -q "^CookieAuthentication 1" "$TORRC_FILE" || NEEDS_UPDATE=1
+    grep -q "^CookieAuthFileGroupReadable 1" "$TORRC_FILE" || NEEDS_UPDATE=1
 
-if [ "$NEEDS_UPDATE" -eq 1 ]; then
-    echo -e "${BLUE}[*] Updating torrc with required ControlPort settings...${NC}"
-    {
-        echo ""
-        echo "# Added by change-tor-ip automation script"
-        echo "ControlPort 9051"
-        echo "CookieAuthentication 1"
-        echo "CookieAuthFileGroupReadable 1"
-    } | sudo tee -a "$TORRC_FILE" > /dev/null
-    sudo systemctl restart tor
-else
-    echo -e "${GREEN}[✓] torrc already configured correctly. Skipping update.${NC}"
-fi
-
+    if [ "$NEEDS_UPDATE" -eq 1 ]; then
+        echo -e "${BLUE}[*] Updating torrc with required ControlPort settings...${NC}"
+        {
+            echo ""
+            echo "# Added by change-tor-ip automation script"
+            echo "ControlPort 9051"
+            echo "CookieAuthentication 1"
+            echo "CookieAuthFileGroupReadable 1"
+        } | sudo tee -a "$TORRC_FILE" > /dev/null
+        sudo systemctl restart tor
+    else
+        echo -e "${GREEN}[✓] torrc already configured correctly. Skipping update.${NC}"
+    fi
+    
 read -p "Enter Tor IP change interval (seconds, default 10): " TIME_INTERVAL
 TIME_INTERVAL=${TIME_INTERVAL:-10}
 
