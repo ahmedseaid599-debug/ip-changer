@@ -1,7 +1,7 @@
 #!/bin/bash
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
+RED='\033;0;31m'
+GREEN='\033;0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 BOLD_GREEN='\033[1;32m'
@@ -23,30 +23,32 @@ type_effect() {
 matrix_effect() {
     clear
     echo -e "${BOLD_GREEN}"
-    # تحديد عرض الشاشة لتوزيع الأرقام بشكل صحيح
     local cols=$(tput cols 2>/dev/null || echo 80)
-    local end=$((SECONDS+3)) # مدة تأثير الماتريكس (3 ثواني)
+    local end=$((SECONDS+3)) # مدة التأثير (3 ثواني)
     
+    # مصفوفة الحروف اليابانية الأصلية للماتريكس (Half-width Katakana) مع أرقام
+    local chars=(ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ｦ ﾝ 0 1 2 3 4 5 6 7 8 9)
+    local num_chars=${#chars[@]}
+
     while [ $SECONDS -lt $end ]; do
         local line=""
         for ((i=0; i<cols; i++)); do
-            local rand=$((RANDOM % 5))
-            if [ $rand -eq 0 ]; then
-                line+="0"
-            elif [ $rand -eq 1 ]; then
-                line+="1"
+            # نسبة ظهور الحروف (1 من 6) عشان المطر ينزل بشكل متناسق ومش زحمة
+            if [ $((RANDOM % 6)) -eq 0 ]; then
+                local rand_idx=$((RANDOM % num_chars))
+                line+="${chars[$rand_idx]}"
             else
                 line+=" "
             fi
         done
         echo -e "$line"
-        sleep 0.05
+        sleep 0.04
     done
     clear
     echo -e "${NC}"
 }
 
-# تشغيل الانترو
+# تشغيل الانترو الياباني
 clear
 type_effect "[*] Initializing Tor Bypass Protocol..." 0.03
 sleep 0.3
