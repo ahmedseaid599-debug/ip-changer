@@ -22,64 +22,62 @@ type_effect() {
 
 matrix_effect() {
     clear
-    # تحديد أبعاد الشاشة
-    local rows=$(tput lines 2>/dev/null || echo 24)
     local cols=$(tput cols 2>/dev/null || echo 80)
-    local end=$((SECONDS+4)) # مدة التأثير
+    local end=$((SECONDS+6)) # زدت المدة لـ 6 ثواني لتغطية الشاشة بالكامل أثناء النزول
     
-    # مصفوفة حروف الكاتاكانا اليابانية
     local chars=(ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ﾝ)
     local num_chars=${#chars[@]}
 
-    tput civis # إخفاء مؤشر الكتابة لتنظيف الشاشة من الومضات
-
-    # تجهيز المصفوفات لتتبع مكان وطول كل قطرة في الأعمدة
-    local drop_y=()
-    local drop_len=()
-    # نستخدم c+=2 لترك مسافة بين الأعمدة لضبط الكثافة وتقليل الزحام
-    for ((c=1; c<=cols; c+=2)); do
-        drop_y[c]=$((RANDOM % rows + 1))
-        drop_len[c]=$((RANDOM % 15 + 5))
+    # مصفوفات لتتبع كل عمود لتكوين خطوط نزول مرتبة
+    local streak=()
+    local space=()
+    
+    for ((c=0; c<cols; c++)); do
+        streak[c]=0
+        space[c]=0
     done
 
+    tput civis # إخفاء مؤشر الكتابة ليكون الشكل نظيفاً
+
     while [ $SECONDS -lt $end ]; do
-        local buffer=""
-        for ((c=1; c<=cols; c+=2)); do
-            local y=${drop_y[c]}
-            local len=${drop_len[c]}
-            
-            # رأس القطرة (لون أبيض ساطع)
-            buffer+="\033[${y};${c}H\033[1;37m${chars[$((RANDOM % num_chars))]}"
-            
-            # جسم القطرة (لون أخضر)
-            if [ $y -gt 1 ]; then
-                buffer+="\033[$((y-1));${c}H\033[0;32m${chars[$((RANDOM % num_chars))]}"
+        local line=""
+        for ((c=0; c<cols; c++)); do
+            # نترك عمود فارغ بين كل خط والتاني لتنظيم الكثافة ومنع الزحام
+            if [ $((c % 2)) -ne 0 ]; then
+                line+=" "
+                continue
             fi
-            
-            # مسح الذيل حتى لا تظل الحروف عالقة على الشاشة
-            local tail=$((y - len))
-            if [ $tail -gt 0 ]; then
-                buffer+="\033[${tail};${c}H "
-            fi
-            
-            # تحريك القطرة للأسفل
-            drop_y[c]=$((y + 1))
-            
-            # إعادة القطرة من الأعلى بطول جديد إذا تخطت أسفل الشاشة
-            if [ ${drop_y[c]} -gt $rows ]; then
-                drop_y[c]=1
-                drop_len[c]=$((RANDOM % 15 + 5))
-                buffer+="\033[${rows};${c}H " # تنظيف آخر حرف في الأسفل
+
+            if [ ${streak[c]} -gt 0 ]; then
+                # استمرار نزول الخط الأخضر
+                line+="${BOLD_GREEN}${chars[$((RANDOM % num_chars))]}${NC}"
+                streak[c]=$((streak[c] - 1))
+                if [ ${streak[c]} -eq 0 ]; then
+                    # عند انتهاء الخط، نضع مسافة فارغة عشوائية
+                    space[c]=$((RANDOM % 15 + 5))
+                fi
+            elif [ ${space[c]} -gt 0 ]; then
+                # استمرار الفراغ لتكون هناك مسافة بين القطرات
+                line+=" "
+                space[c]=$((space[c] - 1))
+            else
+                # فرصة 5% أن يبدأ خط جديد بالسقوط
+                if [ $((RANDOM % 100)) -lt 5 ]; then
+                    streak[c]=$((RANDOM % 20 + 5))
+                    line+="${BOLD_GREEN}${chars[$((RANDOM % num_chars))]}${NC}"
+                    streak[c]=$((streak[c] - 1))
+                else
+                    line+=" "
+                fi
             fi
         done
-        # طباعة التحديثات كلها مرة واحدة لسرعة الأداء
-        echo -en "$buffer"
-        sleep 0.05
+        # طباعة السطر مما يجعل الشاشة تنزل للأسفل بشكل طبيعي
+        printf "%b\n" "$line"
+        sleep 0.04
     done
     
     tput cnorm # إعادة إظهار المؤشر
     clear
-    echo -e "${NC}" # إعادة الألوان لطبيعتها
 }
 
 # تشغيل الانترو
@@ -157,26 +155,26 @@ fi
 
 echo -e "${BLUE}[*] Configuring Tor...${NC}"
 TORRC_FILE="/etc/tor/torrc"
-    NEEDS_UPDATE=0
+NEEDS_UPDATE=0
 
-    grep -q "^ControlPort 9051" "$TORRC_FILE" || NEEDS_UPDATE=1
-    grep -q "^CookieAuthentication 1" "$TORRC_FILE" || NEEDS_UPDATE=1
-    grep -q "^CookieAuthFileGroupReadable 1" "$TORRC_FILE" || NEEDS_UPDATE=1
+grep -q "^ControlPort 9051" "$TORRC_FILE" || NEEDS_UPDATE=1
+grep -q "^CookieAuthentication 1" "$TORRC_FILE" || NEEDS_UPDATE=1
+grep -q "^CookieAuthFileGroupReadable 1" "$TORRC_FILE" || NEEDS_UPDATE=1
 
-    if [ "$NEEDS_UPDATE" -eq 1 ]; then
-        echo -e "${BLUE}[*] Updating torrc with required ControlPort settings...${NC}"
-        {
-            echo ""
-            echo "# Added by change-tor-ip automation script"
-            echo "ControlPort 9051"
-            echo "CookieAuthentication 1"
-            echo "CookieAuthFileGroupReadable 1"
-        } | sudo tee -a "$TORRC_FILE" > /dev/null
-        sudo systemctl restart tor
-    else
-        echo -e "${GREEN}[✓] torrc already configured correctly. Skipping update.${NC}"
-    fi
-    
+if [ "$NEEDS_UPDATE" -eq 1 ]; then
+    echo -e "${BLUE}[*] Updating torrc with required ControlPort settings...${NC}"
+    {
+        echo ""
+        echo "# Added by change-tor-ip automation script"
+        echo "ControlPort 9051"
+        echo "CookieAuthentication 1"
+        echo "CookieAuthFileGroupReadable 1"
+    } | sudo tee -a "$TORRC_FILE" > /dev/null
+    sudo systemctl restart tor
+else
+    echo -e "${GREEN}[✓] torrc already configured correctly. Skipping update.${NC}"
+fi
+
 read -p "Enter Tor IP change interval (seconds, default 10): " TIME_INTERVAL
 TIME_INTERVAL=${TIME_INTERVAL:-10}
 
