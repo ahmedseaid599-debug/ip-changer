@@ -4,44 +4,58 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+BOLD_GREEN='\033[1;32m'
 NC='\033[0m'
 
-# ─── MATRIX INTRO ───────────────────────────────────────
-matrix_intro() {
-    local duration=${1:-4}
-    local lines=20
-    local cols
-    cols=$(tput cols 2>/dev/null || echo 80)
-    tput civis
-    RANDOM=$$$(date +%s)
-    end=$((SECONDS + duration))
+# ==========================================
+# MATRIX INTRO FUNCTIONS
+# ==========================================
+type_effect() {
+    local text="$1"
+    local delay="$2"
+    for ((i=0; i<${#text}; i++)); do
+        echo -en "${BOLD_GREEN}${text:$i:1}${NC}"
+        sleep "$delay"
+    done
+    echo ""
+}
+
+matrix_effect() {
+    clear
+    echo -e "${BOLD_GREEN}"
+    # تحديد عرض الشاشة لتوزيع الأرقام بشكل صحيح
+    local cols=$(tput cols 2>/dev/null || echo 80)
+    local end=$((SECONDS+3)) # مدة تأثير الماتريكس (3 ثواني)
+    
     while [ $SECONDS -lt $end ]; do
-        for ((i=0; i<lines; i++)); do
-            line=""
-            for ((j=0; j<cols; j++)); do
-                if [ $((RANDOM % 5)) -eq 0 ]; then
-                    char=$((RANDOM % 2))
-                    if [ $char -eq 0 ]; then
-                        line+="$(printf '%s' $((RANDOM % 2)))"
-                    else
-                        code=$((RANDOM % 126 + 33))
-                        line+="$(printf '%b' "$(printf '\\x%x' $code)")"
-                    fi
-                else
-                    line+=" "
-                fi
-            done
-            echo -e "${GREEN}${line}${NC}"
+        local line=""
+        for ((i=0; i<cols; i++)); do
+            local rand=$((RANDOM % 5))
+            if [ $rand -eq 0 ]; then
+                line+="0"
+            elif [ $rand -eq 1 ]; then
+                line+="1"
+            else
+                line+=" "
+            fi
         done
+        echo -e "$line"
         sleep 0.05
     done
-    tput cnorm
     clear
+    echo -e "${NC}"
 }
-# ────────────────────────────────────────────────────────
 
-# تشغيل الماتريكس انترو
-matrix_intro 4
+# تشغيل الانترو
+clear
+type_effect "[*] Initializing Tor Bypass Protocol..." 0.03
+sleep 0.3
+type_effect "[*] Securing Connection..." 0.03
+sleep 0.3
+type_effect "[*] Wake up, Meliodas..." 0.05
+sleep 0.5
+matrix_effect
+# ==========================================
 
 echo -e "${BLUE}"
 echo "TOR"
