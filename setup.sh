@@ -24,26 +24,53 @@ matrix_effect() {
     clear
     echo -e "${BOLD_GREEN}"
     local cols=$(tput cols 2>/dev/null || echo 80)
-    local end=$((SECONDS+4)) # زودت المدة لـ 4 ثواني لتستمتع بالتأثير
+    local end=$((SECONDS+4)) # مدة التأثير 4 ثواني
     
-    # مصفوفة حروف الكاتاكانا اليابانية (الأقرب للماتريكس الأصلي)
+    # مصفوفة حروف الكاتاكانا اليابانية
     local chars=(ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ﾝ)
     local num_chars=${#chars[@]}
+    
+    # مصفوفات لتخزين حالة كل عمود (نوعه وطول الشلال)
+    declare -a col_len
+    declare -a col_type
+    
+    # تهيئة الأعمدة بشكل عشوائي في البداية
+    for ((i=0; i<cols; i++)); do
+        col_type[$i]=$((RANDOM % 2)) # 1 يعني بيطبع حروف، 0 يعني بيطبع فراغ
+        if [ ${col_type[$i]} -eq 1 ]; then
+            col_len[$i]=$((RANDOM % 12 + 3))  # طول حبل الحروف
+        else
+            col_len[$i]=$((RANDOM % 20 + 5))  # طول الفراغ بين الحبال
+        fi
+    done
 
     while [ $SECONDS -lt $end ]; do
         local line=""
         for ((i=0; i<cols; i++)); do
-            local rand=$((RANDOM % 10))
-            # تقليل كثافة الحروف لعمل تأثير المطر (20% فرصة لظهور حرف)
-            if [ $rand -lt 2 ]; then 
+            # لو طول الحبل أو الفراغ خلص، اعكس الحالة واختار طول جديد
+            if [ ${col_len[$i]} -le 0 ]; then
+                if [ ${col_type[$i]} -eq 1 ]; then
+                    col_type[$i]=0
+                    col_len[$i]=$((RANDOM % 25 + 5))  # مسافة الفراغ القادمة (تتحكم في الكثافة)
+                else
+                    col_type[$i]=1
+                    col_len[$i]=$((RANDOM % 15 + 4))  # طول حبل الحروف القادم
+                fi
+            fi
+            
+            # بناء السطر بناءً على حالة العمود الحالية
+            if [ ${col_type[$i]} -eq 1 ]; then
                 local char_idx=$((RANDOM % num_chars))
                 line+="${chars[$char_idx]}"
             else
                 line+=" "
             fi
+            
+            # تقليل الطول المتبقي للعمود
+            ((col_len[$i]--))
         done
         echo -e "$line"
-        sleep 0.04 # تسريع بسيط ليكون التساقط أكثر سلاسة
+        sleep 0.04
     done
     clear
     echo -e "${NC}"
@@ -71,7 +98,7 @@ echo " |_____|_|       \_____|_| |_|\__,_|_| |_|\__, |\___|_|     "
 echo "                                           __/ |            "
 echo "                                          |___/     V 1.0   "
 echo -e "${NC}"
-echo -e "${YELLOW}Author: 𝐌𝐞𝐥𝐢𝐨𝐝𝐚𝐬 𝐕𝐚𝐥𝐥𝐚𝐢𝐧 https://t.me/Heavenvoid ${NC}"
+echo -e "${YELLOW}Author: 𝐌𝐞ليوداس 𝐕allain https://t.me/Heavenvoid ${NC}"
 echo -e "${YELLOW}=========================================================${NC}\n"
 
 set -e
