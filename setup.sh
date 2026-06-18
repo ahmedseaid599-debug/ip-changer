@@ -4,39 +4,75 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD_GREEN='\033[1;32m'
+BOLD_CYAN='\033[1;36m'
+WHITE='\033[1;37m'
 NC='\033[0m'
 
-# ===== MATRIX INTRO =====
+# ===== MATRIX INTRO (FULL SCREEN RAIN) =====
 matrix_intro() {
-    BOLD_GREEN='\033[1;32m'
-    DIM_GREEN='\033[2;32m'
-    RESET='\033[0m'
-
+    clear
     cols=$(tput cols 2>/dev/null || echo 80)
     lines=$(tput lines 2>/dev/null || echo 24)
 
-    CHARS='アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789@#$%&*!?/<>[]{}ABCDEFabcdef'
-    CHARS_LEN=${#CHARS}
+    # Hide cursor
+    tput civis
 
-    clear
+    # Array of Matrix characters
+    chars=(0 1 2 3 4 6 7 8 R S T U V W X Y Z \
+            w x y z \
+           ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ \
+           ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ヲ ン)
+
+    # Initialize drops at random starting positions
+    declare -a drop_pos
+    declare -a drop_speed
+    for ((i=0; i<cols; i++)); do
+        drop_pos[$i]=$((RANDOM % lines))
+        drop_speed[$i]=$((RANDOM % 3 + 1))
+    done
+
+    # Trap Ctrl+C to restore cursor
+    trap 'tput cvvis; clear; exit 0' SIGINT SIGTERM
+
     end=$((SECONDS + 4))
     while [ $SECONDS -lt $end ]; do
-        col=$((RANDOM % cols))
-        row=$((RANDOM % lines))
-        idx=$((RANDOM % CHARS_LEN))
-        char="${CHARS:$idx:1}"
-
-        # بعض الحروف تبان فاتحة وبعضها داكنة
-        if [ $((RANDOM % 3)) -eq 0 ]; then
-            tput cup $row $col 2>/dev/null
-            printf "${BOLD_GREEN}${char}${RESET}"
-        else
-            tput cup $row $col 2>/dev/null
-            printf "${DIM_GREEN}${char}${RESET}"
-        fi
-
-        sleep 0.01
+        for ((col=0; col<cols; col++)); do
+            # Draw the trail - multiple characters per column for depth
+            for ((depth=0; depth<3; depth++)); do
+                pos=$(( (drop_pos[$col] - depth + lines) % lines ))
+                char_idx=$((RANDOM % ${#chars[@]}))
+                
+                if [ $depth -eq 0 ]; then
+                    # Lead character - bright white
+                    tput cup $pos $col 2>/dev/null
+                    printf "${WHITE}${chars[$char_idx]}${NC}"
+                elif [ $depth -eq 1 ]; then
+                    # Second - bright green
+                    tput cup $pos $col 2>/dev/null
+                    printf "${BOLD_GREEN}${chars[$char_idx]}${NC}"
+                else
+                    # Trail - dim green
+                    tput cup $pos $col 2>/dev/null
+                    printf "${GREEN}${chars[$char_idx]}${NC}"
+                fi
+            done
+            
+            # Move drop down
+            drop_pos[$col]=$(( (drop_pos[$col] + drop_speed[$col]) % lines ))
+            
+            # Random reset - send drop back to top
+            if [ $((RANDOM % 20)) -eq 0 ]; then
+                drop_pos[$col]=0
+                drop_speed[$col]=$((RANDOM % 3 + 1))
+            fi
+        done
+        sleep 0.05
     done
+
+    # Restore cursor
+    tput cvvis
     clear
 }
 
