@@ -7,9 +7,7 @@ BLUE='\033[0;34m'
 BOLD_GREEN='\033[1;32m'
 NC='\033[0m'
 
-# ==========================================
 # MATRIX INTRO FUNCTIONS
-# ==========================================
 type_effect() {
     local text="$1"
     local delay="$2"
@@ -23,12 +21,12 @@ type_effect() {
 matrix_effect() {
     clear
     local cols=$(tput cols 2>/dev/null || echo 80)
-    local end=$((SECONDS+6)) # زدت المدة لـ 6 ثواني لتغطية الشاشة بالكامل أثناء النزول
+    local end=$((SECONDS+6)) 
     
     local chars=(ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ﾝ)
     local num_chars=${#chars[@]}
 
-    # مصفوفات لتتبع كل عمود لتكوين خطوط نزول مرتبة
+    
     local streak=()
     local space=()
     
@@ -37,31 +35,31 @@ matrix_effect() {
         space[c]=0
     done
 
-    tput civis # إخفاء مؤشر الكتابة ليكون الشكل نظيفاً
+    tput civis 
 
     while [ $SECONDS -lt $end ]; do
         local line=""
         for ((c=0; c<cols; c++)); do
-            # نترك عمود فارغ بين كل خط والتاني لتنظيم الكثافة ومنع الزحام
+            
             if [ $((c % 2)) -ne 0 ]; then
                 line+=" "
                 continue
             fi
 
             if [ ${streak[c]} -gt 0 ]; then
-                # استمرار نزول الخط الأخضر
+                
                 line+="${BOLD_GREEN}${chars[$((RANDOM % num_chars))]}${NC}"
                 streak[c]=$((streak[c] - 1))
                 if [ ${streak[c]} -eq 0 ]; then
-                    # عند انتهاء الخط، نضع مسافة فارغة عشوائية
+                    
                     space[c]=$((RANDOM % 15 + 5))
                 fi
             elif [ ${space[c]} -gt 0 ]; then
-                # استمرار الفراغ لتكون هناك مسافة بين القطرات
+                
                 line+=" "
                 space[c]=$((space[c] - 1))
             else
-                # فرصة 5% أن يبدأ خط جديد بالسقوط
+                
                 if [ $((RANDOM % 100)) -lt 5 ]; then
                     streak[c]=$((RANDOM % 20 + 5))
                     line+="${BOLD_GREEN}${chars[$((RANDOM % num_chars))]}${NC}"
@@ -71,16 +69,16 @@ matrix_effect() {
                 fi
             fi
         done
-        # طباعة السطر مما يجعل الشاشة تنزل للأسفل بشكل طبيعي
+        
         printf "%b\n" "$line"
         sleep 0.04
     done
     
-    tput cnorm # إعادة إظهار المؤشر
+    tput cnorm 
     clear
 }
 
-# تشغيل الانترو
+
 clear
 type_effect "[*] Initializing Tor Bypass Protocol..." 0.03
 sleep 0.3
