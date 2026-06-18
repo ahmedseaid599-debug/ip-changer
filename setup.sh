@@ -24,28 +24,32 @@ matrix_effect() {
     clear
     echo -e "${BOLD_GREEN}"
     local cols=$(tput cols 2>/dev/null || echo 80)
-    local end=$((SECONDS+3))
+    local end=$((SECONDS+4)) # زودت المدة لـ 4 ثواني لتستمتع بالتأثير
     
-    local chars=(ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ｦ ﾝ 0 1 2 3 4 5 6 7 8 9)
+    # مصفوفة حروف الكاتاكانا اليابانية (الأقرب للماتريكس الأصلي)
+    local chars=(ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ﾝ)
     local num_chars=${#chars[@]}
 
     while [ $SECONDS -lt $end ]; do
         local line=""
         for ((i=0; i<cols; i++)); do
-            if [ $((RANDOM % 6)) -eq 0 ]; then
-                local rand_idx=$((RANDOM % num_chars))
-                line+="${chars[$rand_idx]}"
+            local rand=$((RANDOM % 10))
+            # تقليل كثافة الحروف لعمل تأثير المطر (20% فرصة لظهور حرف)
+            if [ $rand -lt 2 ]; then 
+                local char_idx=$((RANDOM % num_chars))
+                line+="${chars[$char_idx]}"
             else
                 line+=" "
             fi
         done
         echo -e "$line"
-        sleep 0.04
+        sleep 0.04 # تسريع بسيط ليكون التساقط أكثر سلاسة
     done
     clear
     echo -e "${NC}"
 }
 
+# تشغيل الانترو
 clear
 type_effect "[*] Initializing Tor Bypass Protocol..." 0.03
 sleep 0.3
@@ -67,7 +71,7 @@ echo " |_____|_|       \_____|_| |_|\__,_|_| |_|\__, |\___|_|     "
 echo "                                           __/ |            "
 echo "                                          |___/     V 1.0   "
 echo -e "${NC}"
-echo -e "${YELLOW}Author: 𝐌𝐞ليوداس 𝐕𝐚𝐥𝐥𝐚𝐢𝐧 https://t.me/Heavenvoid ${NC}"
+echo -e "${YELLOW}Author: 𝐌𝐞𝐥𝐢𝐨𝐝𝐚𝐬 𝐕𝐚𝐥𝐥𝐚𝐢𝐧 https://t.me/Heavenvoid ${NC}"
 echo -e "${YELLOW}=========================================================${NC}\n"
 
 set -e
