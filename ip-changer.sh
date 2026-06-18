@@ -4,7 +4,89 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+BOLD_GREEN='\033[1;32m'
 NC='\033[0m'
+
+# MATRIX INTRO FUNCTIONS
+type_effect() {
+    local text="$1"
+    local delay="$2"
+    for ((i=0; i<${#text}; i++)); do
+        echo -en "${BOLD_GREEN}${text:$i:1}${NC}"
+        sleep "$delay"
+    done
+    echo ""
+}
+
+matrix_effect() {
+    clear
+    local cols=$(tput cols 2>/dev/null || echo 80)
+    local end=$((SECONDS+6)) 
+    
+    local chars=(ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ﾝ)
+    local num_chars=${#chars[@]}
+
+    
+    local streak=()
+    local space=()
+    
+    for ((c=0; c<cols; c++)); do
+        streak[c]=0
+        space[c]=0
+    done
+
+    tput civis 
+
+    while [ $SECONDS -lt $end ]; do
+        local line=""
+        for ((c=0; c<cols; c++)); do
+            
+            if [ $((c % 2)) -ne 0 ]; then
+                line+=" "
+                continue
+            fi
+
+            if [ ${streak[c]} -gt 0 ]; then
+                
+                line+="${BOLD_GREEN}${chars[$((RANDOM % num_chars))]}${NC}"
+                streak[c]=$((streak[c] - 1))
+                if [ ${streak[c]} -eq 0 ]; then
+                    
+                    space[c]=$((RANDOM % 15 + 5))
+                fi
+            elif [ ${space[c]} -gt 0 ]; then
+                
+                line+=" "
+                space[c]=$((space[c] - 1))
+            else
+                
+                if [ $((RANDOM % 100)) -lt 5 ]; then
+                    streak[c]=$((RANDOM % 20 + 5))
+                    line+="${BOLD_GREEN}${chars[$((RANDOM % num_chars))]}${NC}"
+                    streak[c]=$((streak[c] - 1))
+                else
+                    line+=" "
+                fi
+            fi
+        done
+        
+        printf "%b\n" "$line"
+        sleep 0.04
+    done
+    
+    tput cnorm 
+    clear
+}
+
+clear
+type_effect "[*] Initializing Tor Bypass Protocol..." 0.03
+sleep 0.3
+type_effect "[*] Securing Connection..." 0.03
+sleep 0.3
+type_effect "[*] Wake up, Meliodas..." 0.05
+sleep 0.5
+matrix_effect
+# ==========================================
 
 echo -e "${BLUE}"
 echo "TOR"
