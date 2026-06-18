@@ -22,58 +22,64 @@ type_effect() {
 
 matrix_effect() {
     clear
-    echo -e "${BOLD_GREEN}"
+    # تحديد أبعاد الشاشة
+    local rows=$(tput lines 2>/dev/null || echo 24)
     local cols=$(tput cols 2>/dev/null || echo 80)
-    local end=$((SECONDS+4)) # مدة التأثير 4 ثواني
+    local end=$((SECONDS+4)) # مدة التأثير
     
     # مصفوفة حروف الكاتاكانا اليابانية
     local chars=(ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ﾝ)
     local num_chars=${#chars[@]}
-    
-    # مصفوفات لتخزين حالة كل عمود (نوعه وطول الشلال)
-    declare -a col_len
-    declare -a col_type
-    
-    # تهيئة الأعمدة بشكل عشوائي في البداية
-    for ((i=0; i<cols; i++)); do
-        col_type[$i]=$((RANDOM % 2)) # 1 يعني بيطبع حروف، 0 يعني بيطبع فراغ
-        if [ ${col_type[$i]} -eq 1 ]; then
-            col_len[$i]=$((RANDOM % 12 + 3))  # طول حبل الحروف
-        else
-            col_len[$i]=$((RANDOM % 20 + 5))  # طول الفراغ بين الحبال
-        fi
+
+    tput civis # إخفاء مؤشر الكتابة لتنظيف الشاشة من الومضات
+
+    # تجهيز المصفوفات لتتبع مكان وطول كل قطرة في الأعمدة
+    local drop_y=()
+    local drop_len=()
+    # نستخدم c+=2 لترك مسافة بين الأعمدة لضبط الكثافة وتقليل الزحام
+    for ((c=1; c<=cols; c+=2)); do
+        drop_y[c]=$((RANDOM % rows + 1))
+        drop_len[c]=$((RANDOM % 15 + 5))
     done
 
     while [ $SECONDS -lt $end ]; do
-        local line=""
-        for ((i=0; i<cols; i++)); do
-            # لو طول الحبل أو الفراغ خلص، اعكس الحالة واختار طول جديد
-            if [ ${col_len[$i]} -le 0 ]; then
-                if [ ${col_type[$i]} -eq 1 ]; then
-                    col_type[$i]=0
-                    col_len[$i]=$((RANDOM % 25 + 5))  # مسافة الفراغ القادمة (تتحكم في الكثافة)
-                else
-                    col_type[$i]=1
-                    col_len[$i]=$((RANDOM % 15 + 4))  # طول حبل الحروف القادم
-                fi
+        local buffer=""
+        for ((c=1; c<=cols; c+=2)); do
+            local y=${drop_y[c]}
+            local len=${drop_len[c]}
+            
+            # رأس القطرة (لون أبيض ساطع)
+            buffer+="\033[${y};${c}H\033[1;37m${chars[$((RANDOM % num_chars))]}"
+            
+            # جسم القطرة (لون أخضر)
+            if [ $y -gt 1 ]; then
+                buffer+="\033[$((y-1));${c}H\033[0;32m${chars[$((RANDOM % num_chars))]}"
             fi
             
-            # بناء السطر بناءً على حالة العمود الحالية
-            if [ ${col_type[$i]} -eq 1 ]; then
-                local char_idx=$((RANDOM % num_chars))
-                line+="${chars[$char_idx]}"
-            else
-                line+=" "
+            # مسح الذيل حتى لا تظل الحروف عالقة على الشاشة
+            local tail=$((y - len))
+            if [ $tail -gt 0 ]; then
+                buffer+="\033[${tail};${c}H "
             fi
             
-            # تقليل الطول المتبقي للعمود
-            ((col_len[$i]--))
+            # تحريك القطرة للأسفل
+            drop_y[c]=$((y + 1))
+            
+            # إعادة القطرة من الأعلى بطول جديد إذا تخطت أسفل الشاشة
+            if [ ${drop_y[c]} -gt $rows ]; then
+                drop_y[c]=1
+                drop_len[c]=$((RANDOM % 15 + 5))
+                buffer+="\033[${rows};${c}H " # تنظيف آخر حرف في الأسفل
+            fi
         done
-        echo -e "$line"
-        sleep 0.04
+        # طباعة التحديثات كلها مرة واحدة لسرعة الأداء
+        echo -en "$buffer"
+        sleep 0.05
     done
+    
+    tput cnorm # إعادة إظهار المؤشر
     clear
-    echo -e "${NC}"
+    echo -e "${NC}" # إعادة الألوان لطبيعتها
 }
 
 # تشغيل الانترو
@@ -98,7 +104,7 @@ echo " |_____|_|       \_____|_| |_|\__,_|_| |_|\__, |\___|_|     "
 echo "                                           __/ |            "
 echo "                                          |___/     V 1.0   "
 echo -e "${NC}"
-echo -e "${YELLOW}Author: 𝐌𝐞ليوداس 𝐕allain https://t.me/Heavenvoid ${NC}"
+echo -e "${YELLOW}Author: 𝐌𝐞𝐥𝐢𝐨𝐝𝐚𝐬 𝐕𝐚𝐥𝐥𝐚𝐢𝐧 https://t.me/Heavenvoid ${NC}"
 echo -e "${YELLOW}=========================================================${NC}\n"
 
 set -e
