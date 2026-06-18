@@ -8,20 +8,34 @@ NC='\033[0m'
 
 # ===== MATRIX INTRO =====
 matrix_intro() {
-    cols=$(tput cols 2>/dev/null || echo 80)
-    lines=$(tput lines 2>/dev/null || echo 24)
     BOLD_GREEN='\033[1;32m'
+    DIM_GREEN='\033[2;32m'
     RESET='\033[0m'
 
+    cols=$(tput cols 2>/dev/null || echo 80)
+    lines=$(tput lines 2>/dev/null || echo 24)
+
+    CHARS='アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789@#$%&*!?/<>[]{}ABCDEFabcdef'
+    CHARS_LEN=${#CHARS}
+
     clear
-    end=$((SECONDS + 3))
+    end=$((SECONDS + 4))
     while [ $SECONDS -lt $end ]; do
         col=$((RANDOM % cols))
         row=$((RANDOM % lines))
-        num=$((RANDOM % 10))
-        tput cup $row $col 2>/dev/null
-        printf "${BOLD_GREEN}${num}${RESET}"
-        sleep 0.02
+        idx=$((RANDOM % CHARS_LEN))
+        char="${CHARS:$idx:1}"
+
+        # بعض الحروف تبان فاتحة وبعضها داكنة
+        if [ $((RANDOM % 3)) -eq 0 ]; then
+            tput cup $row $col 2>/dev/null
+            printf "${BOLD_GREEN}${char}${RESET}"
+        else
+            tput cup $row $col 2>/dev/null
+            printf "${DIM_GREEN}${char}${RESET}"
+        fi
+
+        sleep 0.01
     done
     clear
 }
