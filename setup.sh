@@ -5,93 +5,108 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
-BOLD_GREEN='\033[1;32m'
-BOLD_CYAN='\033[1;36m'
-WHITE='\033[1;37m'
+BOLD='\033[1m'
 NC='\033[0m'
 
-# ===== MATRIX INTRO (FULL SCREEN RAIN) =====
-matrix_intro() {
-    clear
-    cols=$(tput cols 2>/dev/null || echo 80)
-    lines=$(tput lines 2>/dev/null || echo 24)
+# ─────────────────────────────────────────
+#  MATRIX INTRO - Full Screen
+# ─────────────────────────────────────────
 
-    # Hide cursor
-    tput civis
+matrix_rain() {
+    local COLS=$(tput cols)
+    local ROWS=$(tput lines)
+    local CHARS='アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF'
+    local CHAR_LEN=${#CHARS}
 
-    # Array of Matrix characters
-    chars=(0 1 2 3 4 6 7 8 R S T U V W X Y Z \
-            w x y z \
-           ｱ ｲ ｳ ｴ ｵ ｶ ｷ ｸ ｹ ｺ ｻ ｼ ｽ ｾ ｿ ﾀ ﾁ ﾂ ﾃ ﾄ ﾅ ﾆ ﾇ ﾈ ﾉ ﾊ ﾋ ﾌ ﾍ ﾎ ﾏ ﾐ ﾑ ﾒ ﾓ ﾔ ﾕ ﾖ \
-           ﾗ ﾘ ﾙ ﾚ ﾛ ﾜ ヲ ン)
+    tput civis          # hide cursor
+    tput clear
 
-    # Initialize drops at random starting positions
-    declare -a drop_pos
-    declare -a drop_speed
-    for ((i=0; i<cols; i++)); do
-        drop_pos[$i]=$((RANDOM % lines))
-        drop_speed[$i]=$((RANDOM % 3 + 1))
+    declare -a drops
+    for ((c=0; c<COLS; c++)); do
+        drops[$c]=$((RANDOM % ROWS))
     done
 
-    # Trap Ctrl+C to restore cursor
-    trap 'tput cvvis; clear; exit 0' SIGINT SIGTERM
+    local end_time=$((SECONDS + 4))   # run for 4 seconds
 
-    end=$((SECONDS + 4))
-    while [ $SECONDS -lt $end ]; do
-        for ((col=0; col<cols; col++)); do
-            # Draw the trail - multiple characters per column for depth
-            for ((depth=0; depth<3; depth++)); do
-                pos=$(( (drop_pos[$col] - depth + lines) % lines ))
-                char_idx=$((RANDOM % ${#chars[@]}))
-                
-                if [ $depth -eq 0 ]; then
-                    # Lead character - bright white
-                    tput cup $pos $col 2>/dev/null
-                    printf "${WHITE}${chars[$char_idx]}${NC}"
-                elif [ $depth -eq 1 ]; then
-                    # Second - bright green
-                    tput cup $pos $col 2>/dev/null
-                    printf "${BOLD_GREEN}${chars[$char_idx]}${NC}"
-                else
-                    # Trail - dim green
-                    tput cup $pos $col 2>/dev/null
-                    printf "${GREEN}${chars[$char_idx]}${NC}"
-                fi
-            done
-            
-            # Move drop down
-            drop_pos[$col]=$(( (drop_pos[$col] + drop_speed[$col]) % lines ))
-            
-            # Random reset - send drop back to top
-            if [ $((RANDOM % 20)) -eq 0 ]; then
-                drop_pos[$col]=0
-                drop_speed[$col]=$((RANDOM % 3 + 1))
+    while [ $SECONDS -lt $end_time ]; do
+        for ((c=0; c<COLS; c+=2)); do
+            local row=${drops[$c]}
+            local ch="${CHARS:$((RANDOM % CHAR_LEN)):1}"
+
+            # Bright white head
+            tput cup $row $c
+            printf "\033[1;97m%s\033[0m" "$ch"
+
+            # Green trail (row-1)
+            if [ $row -gt 0 ]; then
+                local trail_ch="${CHARS:$((RANDOM % CHAR_LEN)):1}"
+                tput cup $((row-1)) $c
+                printf "\033[0;32m%s\033[0m" "$trail_ch"
             fi
+
+            # Dim green fade (row-2)
+            if [ $row -gt 1 ]; then
+                tput cup $((row-2)) $c
+                printf "\033[2;32m%s\033[0m" "${CHARS:$((RANDOM % CHAR_LEN)):1}"
+            fi
+
+            # Erase tail
+            local tail=$((row - 6))
+            if [ $tail -ge 0 ]; then
+                tput cup $tail $c
+                printf " "
+            fi
+
+            drops[$c]=$(( (row + 1) % ROWS ))
         done
-        sleep 0.05
+        sleep 0.04
     done
 
-    # Restore cursor
-    tput cvvis
-    clear
+    # Fade out - clear screen smoothly
+    for ((i=0; i<3; i++)); do
+        tput clear
+        sleep 0.15
+        for ((c=0; c<COLS; c+=2)); do
+            for ((r=0; r<ROWS; r+=3)); do
+                tput cup $r $c
+                printf "\033[2;32m%s\033[0m" "${CHARS:$((RANDOM % CHAR_LEN)):1}"
+            done
+        done
+        sleep 0.1
+    done
+
+    tput clear
+    tput cnorm          # restore cursor
 }
 
-matrix_intro
-# ===== END MATRIX INTRO =====
+# ─────────────────────────────────────────
+#  LOGO REVEAL (after matrix)
+# ─────────────────────────────────────────
 
-echo -e "${BLUE}"
-echo "TOR"
-echo "  _____ _____     _____ _                                   "
-echo " |_   _|  __ \   / ____| |                                  "
-echo "   | | | |__) | | |    | |__   __ _ _ __   __ _  ___ _ __   "
-echo "   | | |  ___/  | |    |  _ \ / _  |  _ \ / _  |/ _ \  __|  "
-echo "  _| |_| |      | |____| | | | (_| | | | | (_| |  __/ |     "
-echo " |_____|_|       \_____|_| |_|\__,_|_| |_|\__, |\___|_|     "
-echo "                                           __/ |            "
-echo "                                          |___/     V 1.0   "
-echo -e "${NC}"
-echo -e "${YELLOW}Author: 𝐌𝐞𝐥𝐢𝐨𝐝𝐚𝐬 𝐕𝐚𝐥𝐥𝐚𝐢𝐧 https://t.me/Heavenvoid ${NC}"
-echo -e "${YELLOW}=========================================================${NC}\n"
+show_logo() {
+    echo -e "${BLUE}"
+    echo "TOR"
+    echo -e "  _____ _____     _____ _                                   "
+    echo -e " |_   _|  __ \\   / ____| |                                  "
+    echo -e "   | | | |__) | | |    | |__   __ _ _ __   __ _  ___ _ __   "
+    echo -e "   | | |  ___/  | |    |  _ \\ / _\` |  _ \\ / _\` |/ _ \\  __|  "
+    echo -e "  _| |_| |      | |____| | | | (_| | | | | (_| |  __/ |     "
+    echo -e " |_____|_|       \\_____|_| |_|\\__,_|_| |_|\\__, |\\___|_|     "
+    echo -e "                                           __/ |            "
+    echo -e "                                          |___/     V 1.0   "
+    echo -e "${NC}"
+    echo -e "${YELLOW}Author: 𝐌𝐞𝐥𝐢𝐨𝐝𝐚𝐬 𝐕𝐚𝐥𝐥𝐚𝐢𝐧 https://t.me/Heavenvoid ${NC}"
+    echo -e "${YELLOW}=========================================================${NC}\n"
+}
+
+# ─── RUN INTRO ───────────────────────────
+matrix_rain
+show_logo
+sleep 0.5
+
+# ─────────────────────────────────────────
+#  ORIGINAL SCRIPT LOGIC
+# ─────────────────────────────────────────
 
 set -e
 
@@ -143,26 +158,26 @@ fi
 
 echo -e "${BLUE}[*] Configuring Tor...${NC}"
 TORRC_FILE="/etc/tor/torrc"
-    NEEDS_UPDATE=0
+NEEDS_UPDATE=0
 
-    grep -q "^ControlPort 9051" "$TORRC_FILE" || NEEDS_UPDATE=1
-    grep -q "^CookieAuthentication 1" "$TORRC_FILE" || NEEDS_UPDATE=1
-    grep -q "^CookieAuthFileGroupReadable 1" "$TORRC_FILE" || NEEDS_UPDATE=1
+grep -q "^ControlPort 9051" "$TORRC_FILE" || NEEDS_UPDATE=1
+grep -q "^CookieAuthentication 1" "$TORRC_FILE" || NEEDS_UPDATE=1
+grep -q "^CookieAuthFileGroupReadable 1" "$TORRC_FILE" || NEEDS_UPDATE=1
 
-    if [ "$NEEDS_UPDATE" -eq 1 ]; then
-        echo -e "${BLUE}[*] Updating torrc with required ControlPort settings...${NC}"
-        {
-            echo ""
-            echo "# Added by change-tor-ip automation script"
-            echo "ControlPort 9051"
-            echo "CookieAuthentication 1"
-            echo "CookieAuthFileGroupReadable 1"
-        } | sudo tee -a "$TORRC_FILE" > /dev/null
-        sudo systemctl restart tor
-    else
-        echo -e "${GREEN}[✓] torrc already configured correctly. Skipping update.${NC}"
-    fi
-    
+if [ "$NEEDS_UPDATE" -eq 1 ]; then
+    echo -e "${BLUE}[*] Updating torrc with required ControlPort settings...${NC}"
+    {
+        echo ""
+        echo "# Added by change-tor-ip automation script"
+        echo "ControlPort 9051"
+        echo "CookieAuthentication 1"
+        echo "CookieAuthFileGroupReadable 1"
+    } | sudo tee -a "$TORRC_FILE" > /dev/null
+    sudo systemctl restart tor
+else
+    echo -e "${GREEN}[✓] torrc already configured correctly. Skipping update.${NC}"
+fi
+
 read -p "Enter Tor IP change interval (seconds, default 10): " TIME_INTERVAL
 TIME_INTERVAL=${TIME_INTERVAL:-10}
 
