@@ -99,7 +99,7 @@ echo " |_____|_|       \\_____|_| |_|\\__,_|_| |_|\\__, |\\___|_|     "
 echo "                                           __/ |            "
 echo "                                          |___/     V 1.0   "
 echo -e "${NC}"
-echo -e "${YELLOW}Author: 𝐌𝐞𝐥𝐢𝐨𝐝𝐚𝐬 : https://t.me/Ans_Egypt ${NC}"
+echo -e "${YELLOW}Author: 𝐌𝐞𝐥𝐢𝐨𝐝𝐚𝐬 https://t.me/Ans_Egypt ${NC}"
 echo -e "${YELLOW}=========================================================${NC}\n"
 
 set -e
